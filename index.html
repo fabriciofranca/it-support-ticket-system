@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IT Support Ticket System</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>IT Support Ticket System</h1>
+    <div id="profile" class="profile">
+      <span id="profile-email" class="muted"></span>
+      <button id="logout-btn" class="btn small" onclick="handleLogout()">Log out</button>
+    </div>
+  </header>
+
+  <!-- ===== AUTH SECTION (login + register) ===== -->
+  <main id="auth-section" class="container hidden">
+    <div class="card auth-card">
+      <h2>Sign in to your account</h2>
+      <form id="auth-form" onsubmit="return false;">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="email" />
+
+        <label for="password">Password</label>
+        <input type="password" id="password" required minlength="6" autocomplete="current-password" />
+
+        <p id="auth-msg" class="msg" role="alert"></p>
+
+        <div class="row">
+          <button class="btn" onclick="handleLogin()">Log in</button>
+          <button class="btn secondary" onclick="handleSignup()">Sign up</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- ===== DASHBOARD ===== -->
+  <main id="dashboard" class="container hidden">
+    <section class="card">
+      <h2 id="form-title">New Ticket</h2>
+      <form id="ticket-form" onsubmit="return false;">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" required />
+
+        <div class="grid-3">
+          <div>
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option>Hardware</option>
+              <option>Software</option>
+              <option>Network</option>
+              <option>Account</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="3" required></textarea>
+
+        <p id="ticket-msg" class="msg" role="alert"></p>
+
+        <div class="row">
+          <button id="submit-btn" class="btn" onclick="handleTicketSubmit()">Create Ticket</button>
+          <button class="btn secondary" onclick="resetForm()">Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <h2>Your Tickets</h2>
+      <div id="ticket-list" class="ticket-list"></div>
+    </section>
+  </main>
+
+  <!-- Supabase client from CDN, then our scripts (order matters) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/tickets.js"></script>
+  <script>
+    // ---- UI event handlers wiring auth.js + tickets.js to the DOM ----
+    async function handleSignup() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("auth-msg");
+      if (!email || password.length < 6) { msg.textContent = "Enter a valid email and a 6+ char password."; return; }
+      const { error } = await signUp(email, password);
+      msg.textContent = error ? "Sign up failed. " + safeErr(error) : "Check your email to confirm (if enabled), then log in.";
+    }
+
+    async function handleLogin() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("auth-msg");
+      const { error } = await logIn(email, password);
+      if (error) { msg.textContent = "Login failed. Check your email and password."; }
+    }
+
+    async function handleLogout() {
+      await logOut();
+      refreshUI();
+    }
+
+    async function handleTicketSubmit() {
+      const f = document.getElementById("ticket-form");
+      const msg = document.getElementById("ticket-msg");
+      const ticket = {
+        title: f.title.value.trim(),
+        category: f.category.value,
+        priority: f.priority.value,
+        description: f.description.value.trim(),
+      };
+      const err = validateTicket(ticket);
+      if (err) { msg.textContent = err; return; }
+
+      let result;
+      if (f.dataset.editId) {
+        result = await supabaseClient.from("tickets").update(ticket).eq("id", f.dataset.editId);
+      } else {
+        result = await createTicket(ticket);
+      }
+      if (result.error) { msg.textContent = "Could not save ticket. Please try again."; return; }
+      msg.textContent = "";
+      resetForm();
+      await loadTickets();
+    }
+
+    // Never leak raw internal errors to users; show only safe hints.
+    function safeErr(error) {
+      if (String(error.message).toLowerCase().includes("already registered")) return "That email is already registered.";
+      return "Please try again.";
+    }
+
+    // Initial load
+    refreshUI();
+  </script>
+</body>
+</html>
