@@ -78,7 +78,18 @@
     </section>
 
     <section>
-      <h2>Your Tickets</h2>
+      <div class="tickets-header">
+        <h2>Your Tickets</h2>
+        <label class="filter-label" for="status-filter">
+          Filter by status:
+          <select id="status-filter" onchange="loadTickets()" aria-label="Filter tickets by status">
+            <option value="All">All</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </label>
+      </div>
       <div id="ticket-list" class="ticket-list"></div>
     </section>
   </main>
