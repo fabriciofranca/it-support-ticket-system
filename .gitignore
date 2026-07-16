@@ -1,0 +1,13 @@
+# Local env files (never commit secrets)
+.env
+.env.local
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+
+# Dependencies (not used in this static project, but safe to ignore)
+node_modules/
+
+# Vercel
+.vercel
