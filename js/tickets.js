@@ -31,10 +31,20 @@ async function createTicket(ticket) {
 }
 
 async function loadTickets() {
-  const { data, error } = await supabaseClient
+  // Optional status filter chosen by the user in the "Your Tickets" toolbar.
+  const filterEl = document.getElementById("status-filter");
+  const statusFilter = filterEl ? filterEl.value : "All";
+
+  let query = supabaseClient
     .from("tickets")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (statusFilter && statusFilter !== "All") {
+    query = query.eq("status", statusFilter);
+  }
+
+  const { data, error } = await query;
 
   const list = document.getElementById("ticket-list");
   if (error) {
@@ -42,7 +52,10 @@ async function loadTickets() {
     return;
   }
   if (!data.length) {
-    list.innerHTML = '<p class="muted">No tickets yet. Create your first one above.</p>';
+    const msg = statusFilter && statusFilter !== "All"
+      ? 'No tickets match this filter.'
+      : 'No tickets yet. Create your first one above.';
+    list.innerHTML = '<p class="muted">' + msg + '</p>';
     return;
   }
   list.innerHTML = data.map(renderTicket).join("");
@@ -52,28 +65,28 @@ function renderTicket(t) {
   const priorityClass = 'badge priority-' + t.priority.toLowerCase();
   const statusClass = 'badge status-' + t.status.toLowerCase().replace(" ", "-");
   return `
-    <article class="ticket-card" data-id="${t.id}">
-      <div class="ticket-head">
-        <h3>${esc(t.title)}</h3>
-        <span class="badge category">${esc(t.category)}</span>
-      </div>
-      <p class="ticket-desc">${esc(t.description)}</p>
-      <div class="ticket-meta">
-        <span class="${priorityClass}">${esc(t.priority)}</span>
-        <span class="${statusClass}">${esc(t.status)}</span>
-        <span class="muted">${new Date(t.created_at).toLocaleString()}</span>
-      </div>
-      <div class="ticket-actions">
-        <label>
-          Status:
-          <select onchange="updateStatus('${t.id}', this.value)" aria-label="Change status">
-            ${STATUSES.map(function(s){return '<option ' + (s === t.status ? 'selected' : '') + '>' + s + '</option>';}).join("")}
-          </select>
-        </label>
-        <button onclick="startEdit('${t.id}')" class="btn small">Edit</button>
-        <button onclick="deleteTicket('${t.id}')" class="btn small danger">Delete</button>
-      </div>
-    </article>`;
+  <article class="ticket-card" data-id="${t.id}">
+    <div class="ticket-head">
+      <h3>${esc(t.title)}</h3>
+      <span class="badge category">${esc(t.category)}</span>
+    </div>
+    <p class="ticket-desc">${esc(t.description)}</p>
+    <div class="ticket-meta">
+      <span class="${priorityClass}">${esc(t.priority)}</span>
+      <span class="${statusClass}">${esc(t.status)}</span>
+      <span class="muted">${new Date(t.created_at).toLocaleString()}</span>
+    </div>
+    <div class="ticket-actions">
+      <label>
+        Status:
+        <select onchange="updateStatus('${t.id}', this.value)" aria-label="Change status">
+          ${STATUSES.map(function(s){return '<option ' + (s === t.status ? 'selected' : '') + '>' + s + '</option>';}).join("")}
+        </select>
+      </label>
+      <button onclick="startEdit('${t.id}')" class="btn small">Edit</button>
+      <button onclick="deleteTicket('${t.id}')" class="btn small danger">Delete</button>
+    </div>
+  </article>`;
 }
 
 async function updateStatus(id, status) {
