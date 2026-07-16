@@ -3,5 +3,5 @@
 // NEVER put the sb_secret_... (service_role) key here.
 const SUPABASE_CONFIG = {
   url: "https://cbfiigypkzoymjitidwk.supabase.co", // your Supabase Project URL
-    anonKey: "PASTE_YOUR_sb_publishable_KEY_HERE", // Settings > API Keys > Publishable key
-    };
+  anonKey: "sb_publishable_ooVnB2NC6UjNElUOU9Fqsw_Uk0oxkV3", // Settings > API Keys > Publishable key
+};
